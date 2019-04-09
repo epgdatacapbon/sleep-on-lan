@@ -18,6 +18,8 @@ func ListenUDP(port int) {
 	sock, err := net.ListenUDP("udp", addr)
 	if err != nil {
 		Error.Println("Error while starting listening :", err.Error())
+		exit <- true
+		return
 	}
 	for {
 		rlen, remote, err := sock.ReadFromUDP(buf[:])

@@ -264,7 +264,7 @@ func ListenHTTP(port int) {
 			Result: true,
 		}
 
-        mac := c.Param("mac")
+		mac := c.Param("mac")
 		Info.Println("Now sending wol magic packet to MAC address [" + mac + "]")
 		magicPacket, err := EncodeMagicPacket(mac)
 		if err != nil {
@@ -276,5 +276,9 @@ func ListenHTTP(port int) {
 	})
 	
 	// localIp := "0.0.0.0"
-	Info.Println(e.Start(":" + strconv.Itoa(port)))
+	err := e.Start(":" + strconv.Itoa(port))
+	if err != nil {
+		Error.Println("Error while starting listening :", err.Error())
+		exit <- true
+	}
 }

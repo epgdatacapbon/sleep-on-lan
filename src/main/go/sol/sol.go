@@ -9,6 +9,7 @@ import (
 
 var configuration = Configuration{}
 var configurationFileName = "sol.json"
+var exit chan bool
 
 func main() {
 	dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
@@ -30,6 +31,7 @@ func main() {
 		Info.Println(" - operation [" + command.Operation + "], command [" + command.Command + "], default [" + strconv.FormatBool(command.IsDefault) + "], type [" + command.CommandType + "]")
 	}
 
+	exit = make(chan bool)
 	for _, listenerConfiguration := range configuration.listenersConfiguration {
 		if listenerConfiguration.active {
 			if strings.EqualFold(listenerConfiguration.nature, "UDP") {
@@ -41,5 +43,8 @@ func main() {
 	}
 
 	// Info.Println("sleep-on-lan up and running")
-	select {} // block forever
+	select {
+	case <-exit:
+		return
+	}
 }
