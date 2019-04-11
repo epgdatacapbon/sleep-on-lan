@@ -9,7 +9,7 @@ import (
 type MagicPacket []byte
 
 func ListenUDP(port int) {
-	Info.Println("Now listening UDP packets on port [" + strconv.Itoa(port) + "]")
+	Info.Println("Listening UDP packets on port [" + strconv.Itoa(port) + "]")
 	var buf [1024]byte
 	addr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(port))
 	if err != nil {
@@ -18,7 +18,6 @@ func ListenUDP(port int) {
 	sock, err := net.ListenUDP("udp", addr)
 	if err != nil {
 		Error.Println("Error while starting listening :", err.Error())
-		exit <- true
 		return
 	}
 	for {

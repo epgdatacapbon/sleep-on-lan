@@ -59,7 +59,6 @@ type RestResult struct {
 	XMLName              xml.Name `xml:"result" json:"-"`
 	Application          string   `xml:"application"`
 	Version              string   `xml:"version"`
-	CompilationTimestamp string   `xml:"compilation"`
 	Hosts                RestResultHosts
 	Listeners            RestResultListeners
 	Commands             RestResultCommands
@@ -156,11 +155,8 @@ func ListenHTTP(port int) {
 	dumpRoute("")
 	e.GET("/", func(c echo.Context) error {
 		result := &RestResult{}
-		result.Application = Version.VersionLabel
+		result.Application = Version.ApplicationName
 		result.Version = Version.Version()
-		if Build != "" {
-			result.CompilationTimestamp = Build
-		}
 		result.Hosts = RestResultHosts{}
 		result.Listeners = RestResultListeners{}
 		result.Commands = RestResultCommands{}
@@ -279,6 +275,5 @@ func ListenHTTP(port int) {
 	err := e.Start(":" + strconv.Itoa(port))
 	if err != nil {
 		Error.Println("Error while starting listening :", err.Error())
-		exit <- true
 	}
 }
