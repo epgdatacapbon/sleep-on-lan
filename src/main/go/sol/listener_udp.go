@@ -9,26 +9,25 @@ import (
 type MagicPacket []byte
 
 func ListenUDP(port int) {
-	Info.Println("Listening UDP packets on port [" + strconv.Itoa(port) + "]")
+	logger.Info("Listening UDP packets on port [" + strconv.Itoa(port) + "]")
 	var buf [1024]byte
 	addr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(port))
 	if err != nil {
-		Error.Println("Error while resolving local address :", err.Error())
+		logger.Error("Error while resolving local address: ", err)
 	}
 	sock, err := net.ListenUDP("udp", addr)
 	if err != nil {
-		Error.Println("Error while starting listening :", err.Error())
+		logger.Error("Error while start listening: ", err)
 		return
 	}
 	for {
 		rlen, remote, err := sock.ReadFromUDP(buf[:])
 		if err != nil {
-			Error.Println("Error while reading :", err.Error())
+			logger.Error("Error while reading: ", err)
 		}
 		extractedMacAddress, _ := extractMacAddress(rlen, buf)
-		Info.Println("Received a MAC address from IP [" + remote.String() + "], extracted mac [" + extractedMacAddress.String() + "]")
+		logger.Info("Received a MAC address from IP [" + remote.String() + "], extracted mac [" + extractedMacAddress.String() + "]")
 		if matchAddress(extractedMacAddress) {
-			Info.Println("(reversed) received MAC address match a local address")
 			doAction()
 		}
 	}
@@ -40,9 +39,6 @@ func matchAddress(receivedAddress net.HardwareAddr) bool {
 		if strings.HasPrefix(value, receivedAddressAsString) {
 			return true
 		}
-		/*if bytes.Equal(receivedAddress, inter.HardwareAddr) {
-			return true
-		}*/
 	}
 
 	return false
@@ -60,7 +56,7 @@ func extractMacAddress(rlen int, buf [1024]byte) (net.HardwareAddr, error) {
 			sep = ":"
 		}
 	} else {
-		Error.Println("Received buffer too small, size [" + strconv.Itoa(rlen) + "]")
+		logger.Error("Received buffer too small, size [" + strconv.Itoa(rlen) + "]")
 	}
 	return net.ParseMAC(r)
 }

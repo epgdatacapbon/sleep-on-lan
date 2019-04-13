@@ -133,7 +133,7 @@ Example 3 : default operation will put the computer to sleep on linux and a seco
     }]
 </pre>
 
-**Default** defines the default command executed when UDP magic packets are received.
+**Default** defines the default operation executed when UDP magic packets are received.
 
 ## Installation
 

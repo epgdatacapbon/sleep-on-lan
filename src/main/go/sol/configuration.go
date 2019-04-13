@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -15,7 +14,6 @@ const (
 
 type Configuration struct {
 	Listeners   []string // what is read from the sol.json configuration file
-	LogLevel    string
 	BroadcastIP string
 	Commands    []CommandConfiguration // the various defined commands. Will be enhanded with default operation if empty from configuration
 	Default     string
@@ -48,7 +46,6 @@ type ListenerConfiguration struct {
 
 func (conf *Configuration) InitDefaultConfiguration() {
 	conf.Listeners = []string{"UDP:9", "HTTP:8009"}
-	conf.LogLevel = "INFO"
 	conf.BroadcastIP = "192.168.255.255"
 	conf.HTTPOutput = "XML"
 	// default commands are registered on Parse() method, depending on the current operating system
@@ -56,35 +53,19 @@ func (conf *Configuration) InitDefaultConfiguration() {
 
 func (conf *Configuration) Load(configurationFileName string) {
 	if _, err := os.Stat(configurationFileName); err == nil {
-		Info.Println("Configuration file found under [" + configurationFileName + "], now reading content")
+		logger.Info("Configuration file found at [" + configurationFileName + "]")
 		file, _ := os.Open(configurationFileName)
 		decoder := json.NewDecoder(file)
 		err := decoder.Decode(&conf)
 		if err != nil {
-			Error.Println("error while loading configuration :", err)
+			logger.Error("error while loading configuration: ", err)
 		}
 	} else {
-		Info.Println("No external configuration file found under [" + configurationFileName + "], will use default values")
+		logger.Info("No configuration file found at [" + configurationFileName + "]")
 	}
 }
 
 func (conf *Configuration) Parse() {
-	// Gestion logs
-	switch conf.LogLevel {
-	case "NONE", "OFF":
-		InitLoggers(ioutil.Discard, ioutil.Discard, ioutil.Discard, ioutil.Discard)
-	case "DEBUG":
-		InitLoggers(os.Stdout, os.Stdout, os.Stdout, os.Stderr)
-	case "INFO":
-		InitLoggers(ioutil.Discard, os.Stdout, os.Stdout, os.Stderr)
-	case "WARN", "WARNING":
-		InitLoggers(ioutil.Discard, ioutil.Discard, os.Stdout, os.Stderr)
-	case "ERROR":
-		InitLoggers(ioutil.Discard, ioutil.Discard, ioutil.Discard, os.Stderr)
-	default:
-		panic("unrecognized log level[" + conf.LogLevel + "], allowed are NONE or OFF, DEBUG, INFO, WARN or WARNING, ERROR")
-	}
-
 	// Convert activated ports
 	for _, s := range conf.Listeners {
 		var splitted = strings.Split(s, ":")
@@ -101,17 +82,15 @@ func (conf *Configuration) Parse() {
 			listenerConfiguration.nature = "HTTP"
 			conf.listenersConfiguration = append(conf.listenersConfiguration, *listenerConfiguration)
 		} else {
-			Error.Println("Unknown listener type [" + key + "], valid values are : UDP, HTTP")
+			logger.Error("Unknown listener type [" + key + "]")
 		}
 	}
-	Trace.Println("Configuration loaded", conf)
 
 	// If no commands are found, inject default ones
 	var nbCommands = len(conf.Commands)
 	if nbCommands == 0 {
 		RegisterDefaultCommand()
 	} else if nbCommands == 1 {
-		Info.Println("Only one command found in configuration, forcing default if needed")
 		conf.Default = conf.Commands[0].Operation
 	}
 
@@ -119,16 +98,14 @@ func (conf *Configuration) Parse() {
 	if conf.Default == "" {
 			conf.Default = conf.Commands[0].Operation
 	}
-	Info.Println("Set default command to [" + conf.Default + "]")
+	logger.Info("Set default operation to [" + conf.Default + "]")
 
 	// Set command type
 	for idx, _ := range conf.Commands {
 		command := &conf.Commands[idx]
 		if command.Command == ""  {
-			Info.Println("Forcing type to [INTERNAL] for command [" + command.Operation + "]")
 			command.CommandType = COMMAND_TYPE_INTERNAL
 		} else if command.CommandType == ""  {
-			Info.Println("Forcing type to [EXTERNAL] for command [" + command.Operation + "]")
 			command.CommandType = COMMAND_TYPE_EXTERNAL
 		}
 	}
