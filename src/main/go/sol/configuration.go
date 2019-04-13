@@ -10,7 +10,7 @@ import (
 
 const (
 	COMMAND_TYPE_EXTERNAL = "external"
-	COMMAND_TYPE_INTERNAL_DLL = "internal-dll"
+	COMMAND_TYPE_INTERNAL = "internal"
 )
 
 type Configuration struct {
@@ -118,7 +118,10 @@ func (conf *Configuration) Parse() {
 	// Set type to external if not provided
 	for idx, _ := range conf.Commands {
 		command := &conf.Commands[idx]
-		if command.CommandType == ""  {
+		if command.Command == ""  {
+			Info.Println("Forcing type to [INTERNAL] for command [" + command.Operation + "]")
+			command.CommandType = COMMAND_TYPE_INTERNAL
+		} else if command.CommandType == ""  {
 			Info.Println("Forcing type to [EXTERNAL] for command [" + command.Operation + "]")
 			command.CommandType = COMMAND_TYPE_EXTERNAL
 		}

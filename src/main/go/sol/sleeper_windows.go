@@ -10,36 +10,39 @@ import (
 
 const (
 	DEFAULT_COMMAND_SLEEP = "sleep"
+	DEFAULT_COMMAND_HIBERNATE = "hibernate"
 	DEFAULT_COMMAND_SHUTDOWN = "shutdown"
 )
 
 func RegisterDefaultCommand() {
-	defaultSleepCommand := CommandConfiguration{Operation: DEFAULT_COMMAND_SLEEP, CommandType: COMMAND_TYPE_INTERNAL_DLL, IsDefault: true}
-	defaultShutdownCommand := CommandConfiguration{Operation: DEFAULT_COMMAND_SHUTDOWN, CommandType: COMMAND_TYPE_INTERNAL_DLL, IsDefault: false}
-	configuration.Commands = []CommandConfiguration{defaultSleepCommand, defaultShutdownCommand}
+	defaultSleepCommand := CommandConfiguration{Operation: DEFAULT_COMMAND_SLEEP, CommandType: COMMAND_TYPE_INTERNAL, IsDefault: false}
+	defaultHibernateCommand := CommandConfiguration{Operation: DEFAULT_COMMAND_HIBERNATE, CommandType: COMMAND_TYPE_INTERNAL, IsDefault: true}
+	defaultShutdownCommand := CommandConfiguration{Operation: DEFAULT_COMMAND_SHUTDOWN, CommandType: COMMAND_TYPE_INTERNAL, IsDefault: false}
+	configuration.Commands = []CommandConfiguration{defaultSleepCommand, defaultHibernateCommand, defaultShutdownCommand}
 }
 
 func ExecuteCommand(Command CommandConfiguration) {
-	if Command.CommandType == COMMAND_TYPE_INTERNAL_DLL {
-		Info.Println("Executing operation [" + Command.Operation + "], type[" + Command.CommandType + "]")
+	if Command.CommandType == COMMAND_TYPE_INTERNAL {
+		Info.Println("Executing operation [" + Command.Operation + "], type [" + Command.CommandType + "]")
 		if Command.Operation == DEFAULT_COMMAND_SLEEP {
-			sleepDLLImplementation()
+			sleepDLLImplementation(0)
+		} else if Command.Operation == DEFAULT_COMMAND_HIBERNATE {
+			sleepDLLImplementation(1)
 		} else if Command.Operation == DEFAULT_COMMAND_SHUTDOWN {
 			shutdownDLLImplementation()
-		}		
+		}
 	} else if Command.CommandType == COMMAND_TYPE_EXTERNAL {
-		Info.Println("Executing operation [" + Command.Operation + "], type[" + Command.CommandType + "], command [" + Command.Command + "]")
-		sleepCommandLineImplementation(Command.Command)
+		Info.Println("Executing operation [" + Command.Operation + "], type [" + Command.CommandType + "], command [" + Command.Command + "]")
+		commandImplementation(Command.Command)
 	} else {
 		Info.Println("Unknown command type [" + Command.CommandType + "]")
 	}
 }
 
-func sleepCommandLineImplementation(cmd string) {
+func commandImplementation(cmd string) {
 	if cmd == "" {
-		cmd = "C:\\Windows\\System32\\rundll32.exe powrprof.dll,SetSuspendState 0,1,1"
+		return
 	}
-	Info.Println("Sleep implementation [windows], sleep command is [", cmd, "]")
 	_, _, err := Execute(cmd)
 	if err != nil {
 		Error.Println("Can't execute command [" + cmd + "] : " + err.Error())
@@ -48,16 +51,16 @@ func sleepCommandLineImplementation(cmd string) {
 	}
 }
 
-func sleepDLLImplementation() {
+func sleepDLLImplementation(state int) {
 	var mod = syscall.NewLazyDLL("Powrprof.dll")
 	var proc = mod.NewProc("SetSuspendState")
 
 	// DLL API : public static extern bool SetSuspendState(bool hiberate, bool forceCritical, bool disableWakeEvent);
 	// ex. : uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("Done Title"))),
-	ret, _, _ := proc.Call(0,
-		uintptr(0), // hibernate
-		uintptr(1), // forceCritical
-		uintptr(1)) // disableWakeEvent
+	ret, _, _ := proc.Call(
+		uintptr(state), // hibernate
+		uintptr(0), // forceCritical
+		uintptr(0)) // disableWakeEvent
 
 	Info.Printf("Command executed, result code [" + fmt.Sprint(ret) + "]")
 }
@@ -87,5 +90,5 @@ func shutdownDLLImplementation() {
 	})
 	if err != nil {
 		Error.Printf("Can't execute command")
-	}	
+	}
 }
