@@ -4,13 +4,13 @@
 
 Wake-on-LAN is a standard low-level protocol implemented in various hardware. At this time, there is not standard to make the opposite and send a computer in sleep mode.
 
-This project allows a windows or linux box to be put into sleep from any other device.
+This project allows a windows box to be put into sleep from any other device.
 
 It works with the exact same magic packet than for Wake-On-LAN, the only difference is that the MAC address has to be written in reverse order.
 
 Technically, you have to run a little daemon on your computer that will listen the same Wake-On-LAN port and send the computer in sleep mode when the reversed MAC address received matches a local address. 
 
-Written in `go`, the code may run on linux and windows platforms.
+Written in `go`, the code can run on windows platform.
 
 ## Usage
 
@@ -119,27 +119,11 @@ Example 2 : force sleep on windows through the rundll32.exe trick (and not throu
     }]
 </pre>
 
-Example 3 : default operation will put the computer to sleep on linux and a second operation will be published to shutdown the computer through HTTP.
-
-<pre>
-  "Commands" : [ 
-    {
-        "Operation" : "halt",
-        "Command" : "pm-halt"
-    },
-    {
-        "Operation" : "sleep",
-        "Command" : "pm-sleep"
-    }]
-</pre>
-
 **Default** defines the default operation executed when UDP magic packets are received.
 
 ## Installation
 
-### Under windows
-
-The SleepOnLan process may be run manually or, for convenience, installed as a service.
+The SleepOnLan process can be run manually or, for convenience, installed as a service.
 
 Usage :
 
@@ -155,20 +139,6 @@ Uninstall as a service :
 
 <pre>sol.exe uninstall
 </pre>
-
-### Under Linux
-
-The SleepOnLan process must use (usually) port 9 (see configuration section if you need another port or if you need to listen to several UDP ports).
-
-Thus the process has either to be ran as root, either has to have the authorization to start on ports < 1024.
-
-The following example allows the process to run on ports &lt; 1024 on recent Linux kernels (for example on ubuntu) :
-
-<pre>sudo setcap 'cap_net_bind_service=+ep' /path/to/sol_binary
-nohup /path/to/sol_binary &gt; /var/log/sleep-on-lan.log 2&gt;&1 &
-</pre>
-
-You may of course daemonize the process or launch it through an external monitor (like [monit](http://mmonit.com/monit/) or [supervisor](http://supervisord.org/introduction.html)).
 
 ## Miscellaneous
 
@@ -199,23 +169,3 @@ Switch  Network_WoL_Laptop   	"Wake PC (laptop)"    <wake>		(WoL, Status, Networ
 Switch  Network_SoL_Solaris   	"Sleep PC (solaris)"  <sleep>		(WoL, Status, Network)   { wol="192.168.8.255#19:98:01:e9:da:14" }
 Switch  Network_SoL_Laptop   	"Sleep PC (laptop)"   <sleep>		(WoL, Status, Network)   { wol="192.168.8.255#35:78:7A:87:D9:C4" }
 </pre>
-
-## Developement
-
-Compile from docker (from host) :
-
-```bash
-make docker
-```
-
-Create binaries (from docker container) :
-
-```bash
-make install
-```
-
-Create distribution (from docker container) :
-
-```bash
-make distribution
-```

@@ -11,7 +11,7 @@ type version struct {
 }
 
 // Version string
-var Version = version{"Sleep-On-Lan", 1, 0, 5}
+var Version = version{"Sleep On Lan", 1, 0, 5}
 
 func (v version) Version() string {
 	var buf bytes.Buffer
