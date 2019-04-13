@@ -18,7 +18,8 @@ type Configuration struct {
 	LogLevel    string
 	BroadcastIP string
 	Commands    []CommandConfiguration // the various defined commands. Will be enhanded with default operation if empty from configuration
-	Auth		AuthConfiguration  // optional
+	Default     string
+	Auth        AuthConfiguration  // optional
 	HTTPOutput  string
 
 	listenersConfiguration []ListenerConfiguration // converted once parsed from Listeners
@@ -36,7 +37,6 @@ func (a AuthConfiguration) isEmpty() bool {
 type CommandConfiguration struct {
 	Operation    string `json:"Operation"`
 	Command      string `json:"Command"`
-	IsDefault    bool   `json:"Default"`
 	CommandType  string `json:"Type"`
 }
 
@@ -106,14 +106,20 @@ func (conf *Configuration) Parse() {
 	}
 	Trace.Println("Configuration loaded", conf)
 
-	// If only one command, then force default, and if no commands are found, inject default ones
+	// If no commands are found, inject default ones
 	var nbCommands = len(conf.Commands)
 	if nbCommands == 0 {
 		RegisterDefaultCommand()
 	} else if nbCommands == 1 {
 		Info.Println("Only one command found in configuration, forcing default if needed")
-		conf.Commands[0].IsDefault = true
+		conf.Default = conf.Commands[0].Operation
 	}
+
+	// Set the first command to default if not provided
+	if conf.Default == "" {
+			conf.Default = conf.Commands[0].Operation
+	}
+	Info.Println("Set default command to [" + conf.Default + "]")
 
 	// Set command type
 	for idx, _ := range conf.Commands {

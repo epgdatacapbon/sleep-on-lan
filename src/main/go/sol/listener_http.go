@@ -39,7 +39,6 @@ type RestResultCommandConfiguration struct {
 	XMLName   xml.Name `xml:"command" json:"-"`
 	Operation string   `xml:"operation,attr"`
 	Command   string   `xml:"command,attr"`
-	IsDefault bool     `xml:"default,attr"`
 	Type      string   `xml:"type,attr"`
 }
 
@@ -56,30 +55,30 @@ type RestResultListenerConfiguration struct {
 }
 
 type RestResult struct {
-	XMLName              xml.Name `xml:"result" json:"-"`
-	Application          string   `xml:"application"`
-	Version              string   `xml:"version"`
-	Hosts                RestResultHosts
-	Listeners            RestResultListeners
-	Commands             RestResultCommands
+	XMLName     xml.Name `xml:"result" json:"-"`
+	Application string   `xml:"application"`
+	Version     string   `xml:"version"`
+	Hosts       RestResultHosts
+	Listeners   RestResultListeners
+	Commands    RestResultCommands
 }
 
 type RestOperationResult struct {
-	XMLName              xml.Name `xml:"result" json:"-"`
-	Operation            string   `xml:"operation"`
-	Result				 bool     `xml:"successful"`
+	XMLName   xml.Name `xml:"result" json:"-"`
+	Operation string   `xml:"operation"`
+	Result    bool     `xml:"successful"`
 }
 
 const (
 	HOST_STATE_ONLINE = "online"
 	HOST_STATE_OFFLINE = "offline"
-	HOST_STATE_UNKNOWN = "unknown"	
+	HOST_STATE_UNKNOWN = "unknown"
 )
 
 type RestStateResult struct {
-	XMLName              xml.Name `xml:"result" json:"-"`
-	State				 string	  `xml:"state"`
-	Host    			 string   `xml:"host"`
+	XMLName xml.Name `xml:"result" json:"-"`
+	State   string   `xml:"state"`
+	Host    string   `xml:"host"`
 }
 
 func dumpRoute(route string) {
@@ -87,7 +86,7 @@ func dumpRoute(route string) {
 }
 
 // func retrieveIpFromMac(mac strinc) string {
-  // requires defined interface ...
+	// requires defined interface ...
 // }
 
 func renderResult(c echo.Context, status int, result interface{}) error {
@@ -135,7 +134,7 @@ func ListenHTTP(port int) {
 
 	e := echo.New()
 	e.HideBanner = true
-	
+
 	// e.File("/", "public/index.html")
 	// e.Static("/", "public")
 	// e.Use(middleware.Gzip())
@@ -160,7 +159,7 @@ func ListenHTTP(port int) {
 		result.Hosts = RestResultHosts{}
 		result.Listeners = RestResultListeners{}
 		result.Commands = RestResultCommands{}
-	
+
 		interfaces := LocalNetworkMap()
 		ips := make([]string, 0, len(interfaces))
 		for key := range interfaces {
@@ -173,11 +172,11 @@ func ListenHTTP(port int) {
 		for _, listenerConfiguration := range configuration.listenersConfiguration {
 			result.Listeners.Listeners = append(result.Listeners.Listeners, RestResultListenerConfiguration{Type: listenerConfiguration.nature, Port: listenerConfiguration.port, Active: listenerConfiguration.active})
 		}
-	
+
 		for _, commandConfiguration := range configuration.Commands {
-			result.Commands.Commands = append(result.Commands.Commands, RestResultCommandConfiguration{Type: commandConfiguration.CommandType, Operation: commandConfiguration.Operation, Command: commandConfiguration.Command, IsDefault: commandConfiguration.IsDefault})
+			result.Commands.Commands = append(result.Commands.Commands, RestResultCommandConfiguration{Type: commandConfiguration.CommandType, Operation: commandConfiguration.Operation, Command: commandConfiguration.Command})
 		}
-	
+
 		return renderResult(c, http.StatusOK, result)
 	})
 
@@ -200,7 +199,7 @@ func ListenHTTP(port int) {
 					ExecuteCommand(availableCommand)
 					break
 				}
-			}			
+			}
 			return renderResult(c, http.StatusOK, result)
 		})
 	}
@@ -226,7 +225,7 @@ func ListenHTTP(port int) {
 	e.GET("/state/local/online", func(c echo.Context) error {
 		return c.String(http.StatusOK, "true")
 	})
-	
+
 	dumpRoute("state/local")
 	e.GET("/state/local", func(c echo.Context) error {
 		result := &RestStateResult{
@@ -235,7 +234,7 @@ func ListenHTTP(port int) {
 		}
 		return renderResult(c, http.StatusOK, result)
 	})
-	
+
 	dumpRoute("state/ip/:ip")
 	e.GET("/state/ip/:ip", func(c echo.Context) error {
 		ip := c.Param("ip")
@@ -252,7 +251,7 @@ func ListenHTTP(port int) {
 		return c.XMLPretty(http.StatusOK, result, "  ")
 	})
 	*/
-		
+
 	dumpRoute("wol/:mac")
 	e.GET("/wol/:mac", func(c echo.Context) error {
 		result := &RestOperationResult{
@@ -270,7 +269,7 @@ func ListenHTTP(port int) {
 		}
 		return renderResult(c, http.StatusOK, result)
 	})
-	
+
 	// localIp := "0.0.0.0"
 	err := e.Start(":" + strconv.Itoa(port))
 	if err != nil {
