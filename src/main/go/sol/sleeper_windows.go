@@ -2,7 +2,6 @@ package main
 
 import (
 	"syscall"
-	"unsafe"
 	"fmt"
 
 	winio "github.com/Microsoft/go-winio"
@@ -77,9 +76,9 @@ func shutdownDLLImplementation() {
 		// var a [1]byte
 		// a[0] = byte(0)
 		// addrPtr := unsafe.Pointer(&a)
-		ret, _, _ := proc.Call(0,
-			uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(""))), // lpMachineName
-			uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(""))), // lpMessage
+		ret, _, _ := proc.Call(
+			uintptr(0), // lpMachineName
+			uintptr(0), // lpMessage
 			uintptr(0), // dwTimeout
 			uintptr(1), // bForceAppsClosed
 			uintptr(0)) // bRebootAfterShutdown
