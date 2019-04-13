@@ -115,7 +115,7 @@ func (conf *Configuration) Parse() {
 		conf.Commands[0].IsDefault = true
 	}
 
-	// Set type to external if not provided
+	// Set type to internal if not provided
 	for idx, _ := range conf.Commands {
 		command := &conf.Commands[idx]
 		if command.Command == ""  {
