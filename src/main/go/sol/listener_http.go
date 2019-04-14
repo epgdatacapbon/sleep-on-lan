@@ -23,9 +23,16 @@ type RestResultHosts struct {
 	Hosts   []RestResultHost
 }
 
-type RestResultCommands struct {
-	XMLName  xml.Name `xml:"commands" json:"-"`
-	Commands []RestResultCommandConfiguration
+type RestResultListenerConfiguration struct {
+	XMLName xml.Name `xml:"listener" json:"-"`
+	Type    string   `xml:"type,attr"`
+	Port    int      `xml:"port,attr"`
+	Active  bool     `xml:"active,attr"`
+}
+
+type RestResultListeners struct {
+	XMLName   xml.Name `xml:"listeners" json:"-"`
+	Listeners []RestResultListenerConfiguration
 }
 
 type RestResultCommandConfiguration struct {
@@ -35,16 +42,9 @@ type RestResultCommandConfiguration struct {
 	Type      string   `xml:"type,attr"`
 }
 
-type RestResultListeners struct {
-	XMLName   xml.Name `xml:"listeners" json:"-"`
-	Listeners []RestResultListenerConfiguration
-}
-
-type RestResultListenerConfiguration struct {
-	XMLName xml.Name `xml:"listener" json:"-"`
-	Type    string   `xml:"type,attr"`
-	Port    int      `xml:"port,attr"`
-	Active  bool     `xml:"active,attr"`
+type RestResultCommands struct {
+	XMLName  xml.Name `xml:"commands" json:"-"`
+	Commands []RestResultCommandConfiguration
 }
 
 type RestResult struct {
@@ -71,7 +71,7 @@ func renderResult(c echo.Context, status int, result interface{}) error {
 	}
 }
 
-func ListenHTTP(port int) {
+func ListenHTTP(port int) error {
 	e := echo.New()
 	e.HideBanner = true
 
@@ -147,7 +147,10 @@ func ListenHTTP(port int) {
 		if err != nil {
 			logger.Error(err)
 		} else {
-			magicPacket.Wake(configuration.BroadcastIP)
+			err = magicPacket.Wake(configuration.BroadcastIP)
+		}
+		if err != nil {
+			result.Result = false
 		}
 		return renderResult(c, http.StatusOK, result)
 	})
@@ -158,16 +161,19 @@ func ListenHTTP(port int) {
 			Result: true,
 		}
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextXMLCharsetUTF8)
-		c.Response().WriteHeader(http.StatusOK)		
+		c.Response().WriteHeader(http.StatusOK)
 		b, _ := xml.Marshal(result)
 		c.Response().Write(b)
 		c.Response().Flush()
-		defer os.Exit(1)
+		defer os.Exit(0)
 		return nil
 	})
 
 	err := e.Start(":" + strconv.Itoa(port))
 	if err != nil {
 		logger.Error("Error while start listening: ", err)
+		return err
 	}
+
+	return nil
 }

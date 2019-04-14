@@ -8,27 +8,34 @@ import (
 
 type MagicPacket []byte
 
-func ListenUDP(port int) {
+func ListenUDP(port int) error {
 	logger.Info("Listening UDP packets on port [" + strconv.Itoa(port) + "]")
-	var buf [1024]byte
 	addr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(port))
 	if err != nil {
 		logger.Error("Error while resolving local address: ", err)
+		return err
 	}
 	sock, err := net.ListenUDP("udp", addr)
 	if err != nil {
 		logger.Error("Error while start listening: ", err)
-		return
+		return err
 	}
+	go ReadPacket(sock)
+	return nil
+}
+
+func ReadPacket(sock *net.UDPConn) {
+	var buf [1024]byte
 	for {
 		rlen, remote, err := sock.ReadFromUDP(buf[:])
-		if err != nil {
+		if err == nil {
+			extractedMacAddress, _ := extractMacAddress(rlen, buf)
+			logger.Info("Received a MAC address from IP [" + remote.String() + "], extracted mac [" + extractedMacAddress.String() + "]")
+			if matchAddress(extractedMacAddress) {
+				doAction()
+			}
+		} else {
 			logger.Error("Error while reading: ", err)
-		}
-		extractedMacAddress, _ := extractMacAddress(rlen, buf)
-		logger.Info("Received a MAC address from IP [" + remote.String() + "], extracted mac [" + extractedMacAddress.String() + "]")
-		if matchAddress(extractedMacAddress) {
-			doAction()
 		}
 	}
 }

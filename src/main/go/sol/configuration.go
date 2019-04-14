@@ -29,7 +29,7 @@ type AuthConfiguration struct {
 }
 
 func (a AuthConfiguration) isEmpty() bool {
-    return a.Login == "" && a.Password == ""
+	return a.Login == "" && a.Password == ""
 }
 
 type CommandConfiguration struct {

@@ -22,12 +22,16 @@ func (p *program) Start(s service.Service) error {
 	return nil
 }
 func (p *program) run() {
+	var err error
 	for _, listenerConfiguration := range configuration.listenersConfiguration {
 		if listenerConfiguration.active {
 			if strings.EqualFold(listenerConfiguration.nature, "UDP") {
-				go ListenUDP(listenerConfiguration.port)
+				err = ListenUDP(listenerConfiguration.port)
 			} else if strings.EqualFold(listenerConfiguration.nature, "HTTP") {
-				go ListenHTTP(listenerConfiguration.port) // , configuration.Commands, configuration.Auth, configuration.HTTPOutput)
+				err = ListenHTTP(listenerConfiguration.port)
+			}
+			if err != nil {
+				os.Exit(1)
 			}
 		}
 	}
