@@ -4,17 +4,17 @@
 
 Wake-on-LAN is a standard low-level protocol implemented in various hardware. At this time, there is not standard to make the opposite and send a computer in sleep mode.
 
-This project allows a windows or linux box to be put into sleep from any other device. 
+This project allows a windows box to be put into sleep from any other device.
 
 It works with the exact same magic packet than for Wake-On-LAN, the only difference is that the MAC address has to be written in reverse order.
 
 Technically, you have to run a little daemon on your computer that will listen the same Wake-On-LAN port and send the computer in sleep mode when the reversed MAC address received matches a local address. 
 
-Written in `go`, the code may run on linux and windows platforms.
+Written in `go`, the code can run on windows platform.
 
 ## Usage
 
-Grab the latest windows + linux release : https://github.com/SR-G/sleep-on-lan/releases/
+Grab the latest windows release : https://github.com/epgdatacapbon/sleep-on-lan/releases
 
 ### Sleep through UDP
 
@@ -44,10 +44,11 @@ Taken automatically if named "sol.json" and located in the same folder than the 
 Content is as follow :
 
 <pre>{
-  "Listeners" : ["UDP:9", "HTTP:8009" ],
+  "Listeners" : ["UDP:9", "HTTP:8009"],
   "LogLevel" : "INFO",
   "BroadcastIP" : "255.255.255.255",
-  "Commands" : []
+  "Commands" : [],
+  "Default" : "sleep"
 }
 </pre>
 
@@ -64,7 +65,7 @@ If no configuration file is provided, UDP:9 and HTTP:8009 are assumed by default
 
 The REST services are exposed on 0.0.0.0 and are thus accessibles from http://localhost/, http://127.0.0.1/, http://192.168.1.x/ and so on.
 
-Rest service may be secured if needed through an optional `Auth` configuration (a `Basic Auth` is triggered on all REST services as soon as this `Auth` section is defined) : 
+Rest service may be secured if needed through an optional `Auth` configuration (a `Basic Auth` is triggered on all REST services as soon as this `Auth` section is defined) :
 
 <pre>{
   "Listeners" : ["UDP:9", "HTTP:8009" ],
@@ -85,21 +86,20 @@ Default output from REST command is `XML` but may be switched from a configurati
 
 **LogLevel** defines the log level to use. Available values are NONE|OFF, DEBUG, INFO, WARN|WARNING, ERROR. Logs are just written to the stderr/stdout outputs.
 
-**BroadcastIP** defines the broadcast IP used by the /wol service. By default the IP used is 192.168.255.255 (local network range).
+**BroadcastIP** defines the broadcast IP used by the service. The default IP is 192.168.255.255 (local network range).
 
 **Commands** defines the available commands.
 
-By default, on both windows and linux, only one command is defined : sleep command (through "pm-suspend" on linux and a DLL API call on windows).
+By default, three commands are defined on windows : sleep, hibernate, shutdown (through a DLL API call on windows).
 
 You may customize / override this behavior, or add new commands (that will then be available under `http://<IP>:<HTTP PORT>/<operation>` if a HTTP listener is defined), if needed.
 
-Each command has 4 attributes :
+Each command has 3 attributes :
 - "Operation" : the name of the operation (for the HTTP url)
-- "Type" : the type of the operation, either "external" (by default, for remote execution) or "internal-dll" (on windows, to trigger a sleep  through a DLL API call)
-- "Default" : true or false. Default command will be executed when UDP magic packets are received. If only one command is defined, it will automatically be the default one
+- "Type" : the type of the operation, either "external" (by default, for remote execution) or "internal" (on windows, to trigger a sleep through a DLL API call)
 - "Command" : for external commands, the exact command that has to be executed (see examples below). May have to contain full path on windows.
 
-Example 1 : only one (default) operation that will shutdown the system on windows. Through HTTP, the operation will be triggerable with `http://<IP>:<PORT_HTTP>/halt/`.
+Example 1 : only one operation that will shutdown the system on windows. Through HTTP, the operation will be triggerable with `http://<IP>:<PORT_HTTP>/halt/`.
 
 <pre>
   "Commands" : [ 
@@ -115,62 +115,30 @@ Example 2 : force sleep on windows through the rundll32.exe trick (and not throu
   "Commands" : [ 
     {
         "Operation" : "sleep",
-        "Command" : "C:\\Windows\\System32\\rundll32.exe powrprof.dll,SetSuspendState 0,1,1"
+        "Command" : "C:\\Windows\\System32\\rundll32.exe powrprof.dll,SetSuspendState"
     }]
 </pre>
 
-Example 3 : default operation will put the computer to sleep on linux and a second operation will be published to shutdown the computer through HTTP.
-
-<pre>
-  "Commands" : [ 
-    {
-        "Operation" : "halt",
-        "Command" : "pm-halt",
-	"Default" : false
-    },
-    {
-        "Operation" : "sleep",
-        "Command" : "pm-sleep",
-	"Default" : true
-    }]
-</pre>
+**Default** defines the default operation executed when UDP magic packets are received.
 
 ## Installation
 
-### Under windows
-
-The SleepOnLan process may be run manually or, for convenience, installed as a service. The easiest way to install the SleepOnLan service is probably to use [NSSM](https://nssm.cc/) (the Non-Sucking Service Manager).
+The SleepOnLan process can be run manually or, for convenience, installed as a service.
 
 Usage :
 
-<pre>nssm install &lt;service name&gt; &lt;full path to binary&gt;
+<pre>sol.exe
 </pre>
 
-Installation example :
+Install as a service :
 
-<pre>c:\Tools\nssm\2.24\win64\nssm.exe install SleepOnLan c:\Tools\SleepOnLan\sol.exe
+<pre>sol.exe install
 </pre>
 
-Removal example : 
+Uninstall as a service :
 
-<pre>c:\Tools\nssm\2.24\win64\nssm.exe remove SleepOnLan confirm
+<pre>sol.exe uninstall
 </pre>
-
-Reference : [nssm](https://nssm.cc/usage)
-
-### Under Linux
-
-The SleepOnLan process must use (usually) port 9 (see configuration section if you need another port or if you need to listen to several UDP ports).
-
-Thus the process has either to be ran as root, either has to have the authorization to start on ports < 1024.
-
-The following example allows the process to run on ports &lt; 1024 on recent Linux kernels (for example on ubuntu) :
-
-<pre>sudo setcap 'cap_net_bind_service=+ep' /path/to/sol_binary
-nohup /path/to/sol_binary &gt; /var/log/sleep-on-lan.log 2&gt;&1 &
-</pre>
-
-You may of course daemonize the process or launch it through an external monitor (like [monit](http://mmonit.com/monit/) or [supervisor](http://supervisord.org/introduction.html)).
 
 ## Miscellaneous
 
@@ -201,23 +169,3 @@ Switch  Network_WoL_Laptop   	"Wake PC (laptop)"    <wake>		(WoL, Status, Networ
 Switch  Network_SoL_Solaris   	"Sleep PC (solaris)"  <sleep>		(WoL, Status, Network)   { wol="192.168.8.255#19:98:01:e9:da:14" }
 Switch  Network_SoL_Laptop   	"Sleep PC (laptop)"   <sleep>		(WoL, Status, Network)   { wol="192.168.8.255#35:78:7A:87:D9:C4" }
 </pre>
-
-## Developement
-
-Compile from docker (from host) :
-
-```bash
-make docker
-```
-
-Create binaries (from docker container) :
-
-```bash
-make install
-```
-
-Create distribution (from docker container) :
-
-```bash
-make distribution
-```

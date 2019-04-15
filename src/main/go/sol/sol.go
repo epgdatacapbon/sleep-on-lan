@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,12 +22,16 @@ func (p *program) Start(s service.Service) error {
 	return nil
 }
 func (p *program) run() {
+	var err error
 	for _, listenerConfiguration := range configuration.listenersConfiguration {
 		if listenerConfiguration.active {
 			if strings.EqualFold(listenerConfiguration.nature, "UDP") {
-				go ListenUDP(listenerConfiguration.port)
+				err = ListenUDP(listenerConfiguration.port)
 			} else if strings.EqualFold(listenerConfiguration.nature, "HTTP") {
-				go ListenHTTP(listenerConfiguration.port) // , configuration.Commands, configuration.Auth, configuration.HTTPOutput)
+				err = ListenHTTP(listenerConfiguration.port)
+			}
+			if err != nil {
+				os.Exit(1)
 			}
 		}
 	}
@@ -37,9 +42,6 @@ func (p *program) Stop(s service.Service) error {
 }
 
 func main() {
-	PreInitLoggers()
-	Info.Println(Version.ApplicationName + " Version " + Version.Version())
-
 	svcConfig := &service.Config{
 		Name:        "SleepOnLan",
 		DisplayName: Version.ApplicationName,
@@ -49,38 +51,31 @@ func main() {
 	prg := &program{}
 	s, err := service.New(prg, svcConfig)
 	if err != nil {
-		Error.Println(err)
-		return;
+		log.Fatal(err)
 	}
-	errs := make(chan error, 5)
-	logger, err = s.Logger(errs)
-	if err != nil {
-		Error.Println(err)
-		return;
-	}
-
 	if len(os.Args) > 1 {
 		err = service.Control(s, os.Args[1])
 		if err != nil {
-			Error.Println("Failed (" + os.Args[1] + ") :", err)
+			log.Print("Failed (" + os.Args[1] + "): ", err)
 		} else {
-			Info.Println("Succeeded (" + os.Args[1] + ")")
+			log.Print("Succeeded (" + os.Args[1] + ")")
 		}
 		return
 	}
 
+	logger, err = s.Logger(nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	logger.Info(Version.ApplicationName + " Version " + Version.Version())
 	dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
 	configuration.InitDefaultConfiguration()
 	configuration.Load(dir + string(os.PathSeparator) + configurationFileName)
 	configuration.Parse()
 
-	Info.Println("Hardware IP/mac addresses are : ")
-	for key, value := range LocalNetworkMap() {
-		Info.Println(" - local IP adress [" + key + "], mac [" + value + "]")
-	}
-
 	err = s.Run()
 	if err != nil {
-		Error.Println(err)
+		logger.Error(err)
 	}
 }

@@ -7,83 +7,25 @@ import (
 	"strings"
 )
 
-func ExternalIP() (string, error) {
-	ifaces, err := net.Interfaces()
-	if err != nil {
-		return "", err
-	}
-	for _, iface := range ifaces {
-		if iface.Flags&net.FlagUp == 0 {
-			continue // interface down
-		}
-		if iface.Flags&net.FlagLoopback != 0 {
-			continue // loopback interface
-		}
-		addrs, err := iface.Addrs()
-		if err != nil {
-			return "", err
-		}
-		for _, addr := range addrs {
-			var ip net.IP
-			switch v := addr.(type) {
-			case *net.IPNet:
-				ip = v.IP
-			case *net.IPAddr:
-				ip = v.IP
-			}
-			if ip == nil || ip.IsLoopback() {
-				continue
-			}
-			ip = ip.To4()
-			if ip == nil {
-				continue // not an ipv4 address
-			}
-			return ip.String(), nil
-		}
-	}
-	return "", errors.New("are you connected to the network?")
-}
-
 // Use the net library to return all Interfaces
 // and capture any errors.
 func GetInterfaces() []net.Interface {
 	interfaces, err := net.Interfaces()
 	if err != nil {
-		Error.Println("Unable to get interfaces : " + err.Error())
+		logger.Error("Unable to get interfaces: ", err)
 	}
 	return interfaces
 }
 
-// Use the net library to get Interface by Index number
-// and capture any errors.
-func GetInterfaceByIndex(index int) (*net.Interface, error) {
-	iface, err := net.InterfaceByIndex(index)
-	if err != nil {
-		return nil, errors.New("Unable to get interface by index : " + err.Error())
-	}
-	return iface, nil
-}
-
-// Use the net library to get Interface by Name
-// and capture any errors
-func GetInterfaceByName(name string) *net.Interface {
-	iface, err := net.InterfaceByName(name)
-	if err != nil {
-		panic("Unable to get interface by name")
-	}
-	return iface
-}
-
-// Using the net library we will loop over all interfaces
-// looking for the interface with matching mac_address.
-func GetInterfaceByHardwareAddress(mac string) (net.Interface, error) {
-	interfaces := GetInterfaces()
-	for _, iface := range interfaces {
-		if strings.ToUpper(mac) == strings.ToUpper(iface.HardwareAddr.String()) {
-			return iface, nil
+func LocalNetworkMap() map[string]string {
+	result := make(map[string]string)
+	for _, inter := range GetInterfaces() {
+		addresses, _ := inter.Addrs()
+		for _, addr := range addresses {
+			result[addr.String()] = inter.HardwareAddr.String()
 		}
 	}
-	panic("Unable to find interface with Hardware Address.")
+	return result
 }
 
 // Use a MAC address to form a magic packet
@@ -104,19 +46,6 @@ func EncodeMagicPacket(macAddr string) (MagicPacket, error) {
 	}
 
 	return MagicPacket(b), nil
-}
-
-func LocalNetworkMap() map[string]string {
-	result := make(map[string]string)
-	for _, inter := range GetInterfaces() {
-		addresses, _ := inter.Addrs()
-		for _, addr := range addresses {
-			result[addr.String()] = inter.HardwareAddr.String()
-		}
-		// Info.Println(inter.Name , " : ", inter.HardwareAddr, ", ")
-		// Info.Println(inter.Addrs())
-	}
-	return result
 }
 
 // Send a Magic Packet to an broadcast class IP address via UDP

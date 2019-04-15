@@ -2,7 +2,6 @@ package main
 
 import (
 	"syscall"
-	"fmt"
 
 	winio "github.com/Microsoft/go-winio"
 )
@@ -14,15 +13,15 @@ const (
 )
 
 func RegisterDefaultCommand() {
-	defaultSleepCommand := CommandConfiguration{Operation: DEFAULT_COMMAND_SLEEP, CommandType: COMMAND_TYPE_INTERNAL, IsDefault: false}
-	defaultHibernateCommand := CommandConfiguration{Operation: DEFAULT_COMMAND_HIBERNATE, CommandType: COMMAND_TYPE_INTERNAL, IsDefault: true}
-	defaultShutdownCommand := CommandConfiguration{Operation: DEFAULT_COMMAND_SHUTDOWN, CommandType: COMMAND_TYPE_INTERNAL, IsDefault: false}
+	defaultSleepCommand := CommandConfiguration{Operation: DEFAULT_COMMAND_SLEEP, CommandType: COMMAND_TYPE_INTERNAL}
+	defaultHibernateCommand := CommandConfiguration{Operation: DEFAULT_COMMAND_HIBERNATE, CommandType: COMMAND_TYPE_INTERNAL}
+	defaultShutdownCommand := CommandConfiguration{Operation: DEFAULT_COMMAND_SHUTDOWN, CommandType: COMMAND_TYPE_INTERNAL}
 	configuration.Commands = []CommandConfiguration{defaultSleepCommand, defaultHibernateCommand, defaultShutdownCommand}
 }
 
 func ExecuteCommand(Command CommandConfiguration) {
 	if Command.CommandType == COMMAND_TYPE_INTERNAL {
-		Info.Println("Executing operation [" + Command.Operation + "], type [" + Command.CommandType + "]")
+		logger.Info("Executing operation [" + Command.Operation + "], type [" + Command.CommandType + "]")
 		if Command.Operation == DEFAULT_COMMAND_SLEEP {
 			sleepDLLImplementation(0)
 		} else if Command.Operation == DEFAULT_COMMAND_HIBERNATE {
@@ -31,10 +30,10 @@ func ExecuteCommand(Command CommandConfiguration) {
 			shutdownDLLImplementation()
 		}
 	} else if Command.CommandType == COMMAND_TYPE_EXTERNAL {
-		Info.Println("Executing operation [" + Command.Operation + "], type [" + Command.CommandType + "], command [" + Command.Command + "]")
+		logger.Info("Execute operation [" + Command.Operation + "], type [" + Command.CommandType + "], command [" + Command.Command + "]")
 		commandImplementation(Command.Command)
 	} else {
-		Info.Println("Unknown command type [" + Command.CommandType + "]")
+		logger.Error("Unknown command type [" + Command.CommandType + "]")
 	}
 }
 
@@ -44,9 +43,7 @@ func commandImplementation(cmd string) {
 	}
 	_, _, err := Execute(cmd)
 	if err != nil {
-		Error.Println("Can't execute command [" + cmd + "] : " + err.Error())
-	} else {
-		Info.Println("Command correctly executed")
+		logger.Error("Can't execute command [" + cmd + "]: ", err)
 	}
 }
 
@@ -56,12 +53,10 @@ func sleepDLLImplementation(state int) {
 
 	// DLL API : public static extern bool SetSuspendState(bool hiberate, bool forceCritical, bool disableWakeEvent);
 	// ex. : uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("Done Title"))),
-	ret, _, _ := proc.Call(
+	proc.Call(
 		uintptr(state), // hibernate
 		uintptr(0), // forceCritical
 		uintptr(0)) // disableWakeEvent
-
-	Info.Printf("Command executed, result code [" + fmt.Sprint(ret) + "]")
 }
 
 func shutdownDLLImplementation() {
@@ -69,25 +64,19 @@ func shutdownDLLImplementation() {
 	err := winio.RunWithPrivilege("SeShutdownPrivilege", func() error { 
 		var mod = syscall.NewLazyDLL("Advapi32.dll")
 		var proc = mod.NewProc("InitiateSystemShutdownW")
-		
+
 		// DLL API : public static extern bool InitiateSystemShutdown(string lpMachineName, string lpMessage, int dwTimeout, bool bForceAppsClosed, bool bRebootAfterShutdown);
 		// ex. : uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("Done Title"))),
-		
-		// var a [1]byte
-		// a[0] = byte(0)
-		// addrPtr := unsafe.Pointer(&a)
-		ret, _, _ := proc.Call(
+
+		proc.Call(
 			uintptr(0), // lpMachineName
 			uintptr(0), // lpMessage
 			uintptr(0), // dwTimeout
 			uintptr(1), // bForceAppsClosed
 			uintptr(0)) // bRebootAfterShutdown
-
-		// ret 0 = false, ret 1 = true = success
-		Info.Printf("Command executed, result code [" + fmt.Sprint(ret) + "]")			
 		return nil 
 	})
 	if err != nil {
-		Error.Printf("Can't execute command")
+		logger.Error("Can't execute shutdown command")
 	}
 }

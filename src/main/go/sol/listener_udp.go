@@ -8,28 +8,34 @@ import (
 
 type MagicPacket []byte
 
-func ListenUDP(port int) {
-	Info.Println("Listening UDP packets on port [" + strconv.Itoa(port) + "]")
-	var buf [1024]byte
+func ListenUDP(port int) error {
+	logger.Info("Listening UDP packets on port [" + strconv.Itoa(port) + "]")
 	addr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(port))
 	if err != nil {
-		Error.Println("Error while resolving local address :", err.Error())
+		logger.Error("Error while resolving local address: ", err)
+		return err
 	}
 	sock, err := net.ListenUDP("udp", addr)
 	if err != nil {
-		Error.Println("Error while starting listening :", err.Error())
-		return
+		logger.Error("Error while start listening: ", err)
+		return err
 	}
+	go ReadPacket(sock)
+	return nil
+}
+
+func ReadPacket(sock *net.UDPConn) {
+	var buf [1024]byte
 	for {
 		rlen, remote, err := sock.ReadFromUDP(buf[:])
-		if err != nil {
-			Error.Println("Error while reading :", err.Error())
-		}
-		extractedMacAddress, _ := extractMacAddress(rlen, buf)
-		Info.Println("Received a MAC address from IP [" + remote.String() + "], extracted mac [" + extractedMacAddress.String() + "]")
-		if matchAddress(extractedMacAddress) {
-			Info.Println("(reversed) received MAC address match a local address")
-			doAction()
+		if err == nil {
+			extractedMacAddress, _ := extractMacAddress(rlen, buf)
+			logger.Info("Received a MAC address from IP [" + remote.String() + "], extracted mac [" + extractedMacAddress.String() + "]")
+			if matchAddress(extractedMacAddress) {
+				doAction()
+			}
+		} else {
+			logger.Error("Error while reading: ", err)
 		}
 	}
 }
@@ -40,9 +46,6 @@ func matchAddress(receivedAddress net.HardwareAddr) bool {
 		if strings.HasPrefix(value, receivedAddressAsString) {
 			return true
 		}
-		/*if bytes.Equal(receivedAddress, inter.HardwareAddr) {
-			return true
-		}*/
 	}
 
 	return false
@@ -60,7 +63,7 @@ func extractMacAddress(rlen int, buf [1024]byte) (net.HardwareAddr, error) {
 			sep = ":"
 		}
 	} else {
-		Error.Println("Received buffer too small, size [" + strconv.Itoa(rlen) + "]")
+		logger.Error("Received buffer too small, size [" + strconv.Itoa(rlen) + "]")
 	}
 	return net.ParseMAC(r)
 }
@@ -75,7 +78,7 @@ func leftPad2Len(s string, padStr string, overallLen int) string {
 func doAction() {
 	for idx, _ := range configuration.Commands {
 		Command := configuration.Commands[idx]
-		if Command.IsDefault {
+		if Command.Operation == configuration.Default {
 			ExecuteCommand(Command)
 			break
 		}

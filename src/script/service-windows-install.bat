@@ -1,1 +1,1 @@
-c:\Tools\nssm\2.24\win64\nssm.exe install SleepOnLan c:\Tools\SleepOnLan\sol.exe
+sol install
