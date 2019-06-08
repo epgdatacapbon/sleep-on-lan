@@ -54,7 +54,7 @@ func main() {
 	if len(os.Args) > 1 {
 		err = service.Control(srv, os.Args[1])
 		if err != nil {
-			fmt.Println("Failed (" + os.Args[1] + "): ", err)
+			fmt.Println("Failed ("+os.Args[1]+"): ", err)
 		} else {
 			fmt.Println("Succeeded (" + os.Args[1] + ")")
 		}

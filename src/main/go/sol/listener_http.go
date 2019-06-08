@@ -34,16 +34,16 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 		sort.Strings(ips)
 		for _, ip := range ips {
-			fmt.Fprintf(w, `  ip="%s" mac="%s"` + "\n", ip, interfaces[ip])
+			fmt.Fprintf(w, `  ip="%s" mac="%s"`+"\n", ip, interfaces[ip])
 		}
 		fmt.Fprintln(w, "\nListeners:")
 		for _, listenerConfiguration := range configuration.listenersConfiguration {
-			fmt.Fprintf(w, `  type="%s" port="%d" active="%t"` + "\n", listenerConfiguration.nature,
+			fmt.Fprintf(w, `  type="%s" port="%d" active="%t"`+"\n", listenerConfiguration.nature,
 				listenerConfiguration.port, listenerConfiguration.active)
 		}
 		fmt.Fprintln(w, "\nCommands:")
 		for _, commandConfiguration := range configuration.Commands {
-			fmt.Fprintf(w, `  operation="%s" command="%s" type="%s"` + "\n", commandConfiguration.Operation,
+			fmt.Fprintf(w, `  operation="%s" command="%s" type="%s"`+"\n", commandConfiguration.Operation,
 				commandConfiguration.Command, commandConfiguration.CommandType)
 		}
 	} else if len(operation) > 3 && operation[:4] == "wol/" {
@@ -87,11 +87,11 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ListenerHTTP(port int) {
-	logger(3, "Listening HTTP requests on port [" + strconv.Itoa(port) + "]")
+	logger(3, "Listening HTTP requests on port ["+strconv.Itoa(port)+"]")
 	http.HandleFunc("/", handler)
-	err := http.ListenAndServe(":" + strconv.Itoa(port), nil)
+	err := http.ListenAndServe(":"+strconv.Itoa(port), nil)
 	if err != nil {
-		logger(1, "Error while start listening: " + err.Error())
+		logger(1, "Error while start listening: "+err.Error())
 		os.Exit(1)
 	}
 }

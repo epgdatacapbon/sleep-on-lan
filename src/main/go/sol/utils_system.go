@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	DEFAULT_COMMAND_SLEEP = "sleep"
+	DEFAULT_COMMAND_SLEEP     = "sleep"
 	DEFAULT_COMMAND_HIBERNATE = "hibernate"
-	DEFAULT_COMMAND_SHUTDOWN = "shutdown"
+	DEFAULT_COMMAND_SHUTDOWN  = "shutdown"
 )
 
 func RegisterDefaultCommand() {
@@ -23,7 +23,7 @@ func RegisterDefaultCommand() {
 
 func ExecuteCommand(Command CommandConfiguration) {
 	if Command.CommandType == COMMAND_TYPE_INTERNAL {
-		logger(3, "Executing operation [" + Command.Operation + "], type [" + Command.CommandType + "]")
+		logger(3, "Executing operation ["+Command.Operation+"], type ["+Command.CommandType+"]")
 		if Command.Operation == DEFAULT_COMMAND_SLEEP {
 			sleepDLLImplementation(0)
 		} else if Command.Operation == DEFAULT_COMMAND_HIBERNATE {
@@ -32,10 +32,10 @@ func ExecuteCommand(Command CommandConfiguration) {
 			shutdownDLLImplementation()
 		}
 	} else if Command.CommandType == COMMAND_TYPE_EXTERNAL {
-		logger(3, "Execute operation [" + Command.Operation + "], type [" + Command.CommandType + "], command [" + Command.Command + "]")
+		logger(3, "Execute operation ["+Command.Operation+"], type ["+Command.CommandType+"], command ["+Command.Command+"]")
 		commandImplementation(Command.Command)
 	} else {
-		logger(2, "Invalid command type [" + Command.CommandType + "]")
+		logger(2, "Invalid command type ["+Command.CommandType+"]")
 	}
 }
 
@@ -47,8 +47,8 @@ func sleepDLLImplementation(state int) {
 	// ex. : uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr("Done Title"))),
 	r, _, _ := proc.Call(
 		uintptr(state), // hibernate
-		uintptr(0), // forceCritical
-		uintptr(0)) // disableWakeEvent
+		uintptr(0),     // forceCritical
+		uintptr(0))     // disableWakeEvent
 	if r == 0 {
 		logger(2, "Unable to execute Suspend command")
 	}
@@ -56,7 +56,7 @@ func sleepDLLImplementation(state int) {
 
 func shutdownDLLImplementation() {
 	// SeShutdownPrivilege
-	err := winio.RunWithPrivilege("SeShutdownPrivilege", func() error { 
+	err := winio.RunWithPrivilege("SeShutdownPrivilege", func() error {
 		var mod = syscall.NewLazyDLL("Advapi32.dll")
 		var proc = mod.NewProc("InitiateSystemShutdownW")
 
@@ -69,7 +69,7 @@ func shutdownDLLImplementation() {
 			uintptr(0), // dwTimeout
 			uintptr(1), // bForceAppsClosed
 			uintptr(0)) // bRebootAfterShutdown
-		return nil 
+		return nil
 	})
 	if err != nil {
 		logger(2, "Unable to execute shutdown command")
@@ -86,6 +86,6 @@ func commandImplementation(command string) {
 	parts = parts[1:len(parts)]
 	_, err := exec.Command(head, parts...).Output()
 	if err != nil {
-		logger(2, "Unable to execute command [" + command + "]: " + err.Error())
+		logger(2, "Unable to execute command ["+command+"]: "+err.Error())
 	}
 }

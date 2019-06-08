@@ -18,14 +18,14 @@ type Configuration struct {
 	BroadcastIP string
 	Commands    []CommandConfiguration // the various defined commands. Will be enhanded with default operation if empty from configuration
 	Default     string
-	Auth        AuthConfiguration  // optional
+	Auth        AuthConfiguration // optional
 
 	listenersConfiguration []ListenerConfiguration // converted once parsed from Listeners
 }
 
 type AuthConfiguration struct {
-	Login 		string `json:"Login"`
-	Password	string `json:"Password"`
+	Login    string `json:"Login"`
+	Password string `json:"Password"`
 }
 
 func (a AuthConfiguration) isEmpty() bool {
@@ -33,9 +33,9 @@ func (a AuthConfiguration) isEmpty() bool {
 }
 
 type CommandConfiguration struct {
-	Operation    string `json:"Operation"`
-	Command      string `json:"Command"`
-	CommandType  string `json:"Type"`
+	Operation   string `json:"Operation"`
+	Command     string `json:"Command"`
+	CommandType string `json:"Type"`
 }
 
 type ListenerConfiguration struct {
@@ -53,16 +53,16 @@ func (conf *Configuration) InitDefaultConfiguration() {
 
 func (conf *Configuration) Load(configurationFileName string) {
 	if _, err := os.Stat(configurationFileName); err == nil {
-		logger(3, "Configuration file found at [" + configurationFileName + "]")
+		logger(3, "Configuration file found at ["+configurationFileName+"]")
 		file, _ := os.Open(configurationFileName)
 		decoder := json.NewDecoder(file)
 		err := decoder.Decode(&conf)
 		if err != nil {
-			logger(1, "Invalid format in [" + configurationFileName + "]: " + err.Error())
+			logger(1, "Invalid format in ["+configurationFileName+"]: "+err.Error())
 			os.Exit(1)
 		}
 	} else {
-		logger(3, "No configuration file found at [" + configurationFileName + "]")
+		logger(3, "No configuration file found at ["+configurationFileName+"]")
 	}
 }
 
@@ -78,7 +78,7 @@ func (conf *Configuration) Parse() {
 	case "INFO":
 		logLevel = 3
 	default:
-		logger(1, "Invalid log level [" + conf.LogLevel + "]")
+		logger(1, "Invalid log level ["+conf.LogLevel+"]")
 		os.Exit(1)
 	}
 
@@ -104,7 +104,7 @@ func (conf *Configuration) Parse() {
 				bHTTP = true
 			}
 		} else {
-			logger(2, "Invalid listener type [" + key + "]")
+			logger(2, "Invalid listener type ["+key+"]")
 		}
 	}
 
@@ -118,16 +118,16 @@ func (conf *Configuration) Parse() {
 
 	// Set the first command to default if not provided
 	if conf.Default == "" {
-			conf.Default = conf.Commands[0].Operation
+		conf.Default = conf.Commands[0].Operation
 	}
-	logger(3, "Set default operation to [" + conf.Default + "]")
+	logger(3, "Set default operation to ["+conf.Default+"]")
 
 	// Set command type
 	for idx, _ := range conf.Commands {
 		command := &conf.Commands[idx]
-		if command.Command == ""  {
+		if command.Command == "" {
 			command.CommandType = COMMAND_TYPE_INTERNAL
-		} else if command.CommandType == ""  {
+		} else if command.CommandType == "" {
 			command.CommandType = COMMAND_TYPE_EXTERNAL
 		}
 	}

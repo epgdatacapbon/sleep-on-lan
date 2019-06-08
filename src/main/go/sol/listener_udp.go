@@ -10,15 +10,15 @@ import (
 type MagicPacket []byte
 
 func ListenerUDP(port int) {
-	logger(3, "Listening UDP packets on port [" + strconv.Itoa(port) + "]")
+	logger(3, "Listening UDP packets on port ["+strconv.Itoa(port)+"]")
 	addr, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(port))
 	if err != nil {
-		logger(1, "Error while resolving local address: " + err.Error())
+		logger(1, "Error while resolving local address: "+err.Error())
 		os.Exit(1)
 	}
 	sock, err := net.ListenUDP("udp", addr)
 	if err != nil {
-		logger(1, "Error while start listening: " + err.Error())
+		logger(1, "Error while start listening: "+err.Error())
 		os.Exit(1)
 	}
 	ReadPacket(sock)
@@ -30,12 +30,12 @@ func ReadPacket(sock *net.UDPConn) {
 		rlen, remote, err := sock.ReadFromUDP(buf[:])
 		if err == nil {
 			extractedMacAddress, _ := extractMacAddress(rlen, buf)
-			logger(3, "Received a MAC address from IP [" + remote.String() + "], extracted mac [" + extractedMacAddress.String() + "]")
+			logger(3, "Received a MAC address from IP ["+remote.String()+"], extracted mac ["+extractedMacAddress.String()+"]")
 			if matchAddress(extractedMacAddress) {
 				doAction()
 			}
 		} else {
-			logger(2, "Error while reading a packet: " + err.Error())
+			logger(2, "Error while reading a packet: "+err.Error())
 		}
 	}
 }
@@ -63,7 +63,7 @@ func extractMacAddress(rlen int, buf [1024]byte) (net.HardwareAddr, error) {
 			sep = ":"
 		}
 	} else {
-		logger(2, "The received packet is too small, size [" + strconv.Itoa(rlen) + "]")
+		logger(2, "The received packet is too small, size ["+strconv.Itoa(rlen)+"]")
 	}
 	return net.ParseMAC(r)
 }
