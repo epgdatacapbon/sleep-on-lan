@@ -1,5 +1,5 @@
 {
-  "Listeners" : ["UDP:9", "UDP:7", "HTTP:8009" ],
+  "Listeners" : ["UDP:9", "UDP:7", "HTTP:8009"],
   "LogLevel" : "INFO",
   "Default" : "hibernate"
 }
