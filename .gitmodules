@@ -1,0 +1,6 @@
+[submodule "src/github.com/kardianos/service"]
+	path = src/github.com/kardianos/service
+	url = https://github.com/kardianos/service.git
+[submodule "src/github.com/microsoft/go-winio"]
+	path = src/github.com/microsoft/go-winio
+	url = https://github.com/microsoft/go-winio.git
