@@ -1,97 +1,32 @@
 package main
 
 import (
-	"encoding/xml"
+	"fmt"
 	"net/http"
+	"os"
 	"sort"
 	"strconv"
-	"os"
-	"strings"
-
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
 )
 
-type RestResultHost struct {
-	XMLName    xml.Name `xml:"host" json:"-"`
-	Ip         string   `xml:"ip,attr"`
-	MacAddress string   `xml:"mac,attr"`
-}
+func handler(w http.ResponseWriter, r *http.Request) {
+	var s string
 
-type RestResultHosts struct {
-	XMLName xml.Name `xml:"hosts" json:"-"`
-	Hosts   []RestResultHost
-}
-
-type RestResultListenerConfiguration struct {
-	XMLName xml.Name `xml:"listener" json:"-"`
-	Type    string   `xml:"type,attr"`
-	Port    int      `xml:"port,attr"`
-	Active  bool     `xml:"active,attr"`
-}
-
-type RestResultListeners struct {
-	XMLName   xml.Name `xml:"listeners" json:"-"`
-	Listeners []RestResultListenerConfiguration
-}
-
-type RestResultCommandConfiguration struct {
-	XMLName   xml.Name `xml:"command" json:"-"`
-	Operation string   `xml:"operation,attr"`
-	Command   string   `xml:"command,attr"`
-	Type      string   `xml:"type,attr"`
-}
-
-type RestResultCommands struct {
-	XMLName  xml.Name `xml:"commands" json:"-"`
-	Commands []RestResultCommandConfiguration
-}
-
-type RestResult struct {
-	XMLName     xml.Name `xml:"result" json:"-"`
-	Application string   `xml:"application"`
-	Version     string   `xml:"version"`
-	Hosts       RestResultHosts
-	Listeners   RestResultListeners
-	Commands    RestResultCommands
-}
-
-type RestOperationResult struct {
-	XMLName   xml.Name `xml:"result" json:"-"`
-	Operation string   `xml:"operation"`
-	Result    bool     `xml:"successful"`
-}
-
-func renderResult(c echo.Context, status int, result interface{}) error {
-	format := c.QueryParam("format")
-	if strings.EqualFold(configuration.HTTPOutput, "JSON") || strings.EqualFold(format, "JSON") {
-		return c.JSONPretty(status, result, "  ")
-	} else {
-		return c.XMLPretty(status, result, "  ")
-	}
-}
-
-func ListenHTTP(port int) error {
-	e := echo.New()
-	e.HideBanner = true
-
+	// Basic authentication
 	if !configuration.Auth.isEmpty() {
-		e.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
-			if username == configuration.Auth.Login && password == configuration.Auth.Password {
-				return true, nil
-			}
-			return false, nil
-		}))
+		username, password, ok := r.BasicAuth()
+		if ok == false || username != configuration.Auth.Login || password != configuration.Auth.Password {
+			w.Header().Set("WWW-Authenticate", `Basic realm="auth area"`)
+			http.Error(w, "Authorization failed", http.StatusUnauthorized)
+			return
+		}
 	}
 
-	e.GET("/", func(c echo.Context) error {
-		result := &RestResult{}
-		result.Application = Version.ApplicationName
-		result.Version = Version.Version()
-		result.Hosts = RestResultHosts{}
-		result.Listeners = RestResultListeners{}
-		result.Commands = RestResultCommands{}
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, application.Name, application.Version)
 
+	operation := r.URL.Path[1:]
+	if operation == "" {
+		fmt.Fprintln(w, "\nHosts:")
 		interfaces := LocalNetworkMap()
 		ips := make([]string, 0, len(interfaces))
 		for key := range interfaces {
@@ -99,81 +34,64 @@ func ListenHTTP(port int) error {
 		}
 		sort.Strings(ips)
 		for _, ip := range ips {
-			result.Hosts.Hosts = append(result.Hosts.Hosts, RestResultHost{Ip: ip, MacAddress: interfaces[ip]})
+			fmt.Fprintf(w, `  ip="%s" mac="%s"` + "\n", ip, interfaces[ip])
 		}
+		fmt.Fprintln(w, "\nListeners:")
 		for _, listenerConfiguration := range configuration.listenersConfiguration {
-			result.Listeners.Listeners = append(result.Listeners.Listeners, RestResultListenerConfiguration{Type: listenerConfiguration.nature, Port: listenerConfiguration.port, Active: listenerConfiguration.active})
+			fmt.Fprintf(w, `  type="%s" port="%d" active="%t"` + "\n", listenerConfiguration.nature,
+				listenerConfiguration.port, listenerConfiguration.active)
 		}
-
+		fmt.Fprintln(w, "\nCommands:")
 		for _, commandConfiguration := range configuration.Commands {
-			result.Commands.Commands = append(result.Commands.Commands, RestResultCommandConfiguration{Type: commandConfiguration.CommandType, Operation: commandConfiguration.Operation, Command: commandConfiguration.Command})
+			fmt.Fprintf(w, `  operation="%s" command="%s" type="%s"` + "\n", commandConfiguration.Operation,
+				commandConfiguration.Command, commandConfiguration.CommandType)
 		}
-
-		return renderResult(c, http.StatusOK, result)
-	})
-
-	// N.B.: sleep operation is now registred through commands below
-	for _, command := range configuration.Commands {
-		e.GET("/" + command.Operation, func(c echo.Context) error {
-			
-			items := strings.Split(c.Request().URL.Path, "/")
-			operation := items[1]
-
-			result := &RestOperationResult{
-				Operation:  operation,
-				Result: true,
-			}
-			for idx, _ := range configuration.Commands {
-				availableCommand := configuration.Commands[idx]
-				if availableCommand.Operation == operation {
-					logger.Info("Executing [" + operation + "]")
-					ExecuteCommand(availableCommand)
-					break
-				}
-			}
-			return renderResult(c, http.StatusOK, result)
-		})
-	}
-
-	e.GET("/wol/:mac", func(c echo.Context) error {
-		result := &RestOperationResult{
-			Operation:  "wol",
-			Result: true,
+	} else if len(operation) > 3 && operation[:4] == "wol/" {
+		mac := operation[4:]
+		if mac == "" {
+			s = "No MAC address"
+			fmt.Fprintln(w, s)
+			logger(2, s)
+			return
 		}
-
-		mac := c.Param("mac")
-		logger.Info("Sending wol magic packet to MAC address [" + mac + "]")
 		magicPacket, err := EncodeMagicPacket(mac)
 		if err != nil {
-			logger.Error(err)
+			fmt.Fprintln(w, err)
+			logger(2, err.Error())
+			return
+		}
+		s = "Sending a magic packet to MAC address [" + mac + "]"
+		fmt.Fprintln(w, s)
+		logger(3, s)
+		err = magicPacket.Wake(configuration.BroadcastIP)
+		if err == nil {
 		} else {
-			err = magicPacket.Wake(configuration.BroadcastIP)
+			fmt.Fprintln(w, err)
+			logger(2, err.Error())
 		}
-		if err != nil {
-			result.Result = false
-		}
-		return renderResult(c, http.StatusOK, result)
-	})
-
-	e.GET("/quit", func(c echo.Context) error {
-		result := &RestOperationResult{
-			Operation:  "quit",
-			Result: true,
-		}
-		c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextXMLCharsetUTF8)
-		c.Response().WriteHeader(http.StatusOK)
-		b, _ := xml.Marshal(result)
-		c.Response().Write(b)
-		c.Response().Flush()
+	} else if operation == "quit" {
+		logger(3, "Quit")
 		defer os.Exit(0)
-		return nil
-	})
-
-	err := e.Start(":" + strconv.Itoa(port))
-	if err != nil {
-		logger.Error("Error while start listening: ", err)
-		return err
+	} else {
+		for idx, _ := range configuration.Commands {
+			availableCommand := configuration.Commands[idx]
+			if availableCommand.Operation == operation {
+				defer ExecuteCommand(availableCommand)
+				return
+			}
+		}
+		s = "Invalid operation [" + operation + "]"
+		fmt.Fprintln(w, s)
+		logger(2, s)
 	}
+}
 
-	return nil
+func ListenerHTTP(port int) {
+	logger(3, "Listening HTTP requests on port [" + strconv.Itoa(port) + "]")
+	http.HandleFunc("/", handler)
+	err := http.ListenAndServe(":" + strconv.Itoa(port), nil)
+	if err != nil {
+		logger(1, "Error while start listening: " + err.Error())
+		os.Exit(1)
+	}
 }

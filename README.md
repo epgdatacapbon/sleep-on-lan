@@ -45,8 +45,8 @@ Content is as follow :
 
 <pre>{
   "Listeners" : ["UDP:9", "HTTP:8009"],
-  "LogLevel" : "INFO",
-  "BroadcastIP" : "255.255.255.255",
+  "LogLevel" : "ERROR",
+  "BroadcastIP" : "192.168.1.255",
   "Commands" : [],
   "Default" : "sleep"
 }
@@ -70,23 +70,21 @@ Rest service may be secured if needed through an optional `Auth` configuration (
 <pre>{
   "Listeners" : ["UDP:9", "HTTP:8009" ],
   "Auth" : {
-      "Login" : "myusername",
-      "Password" : "mypassword"
+      "Login" : "username",
+      "Password" : "password"
   }
 }
 </pre>
 
-Authed REST may still be triggered from a remote host, if needed, through : 
+Authed REST may still be triggered from a remote host, if needed, through :
 
 ```
 curl http://myusername:mypassword@<IP>/sleep/
 ```
 
-Default output from REST command is `XML` but may be switched from a configuration point of view (by adding a `HTTPOutput : 'JSON'`) or on a per-request basis (by adding a `?format=JSON` to the request, one would retrieve a JSON result).
+**LogLevel** defines the log level to use. Available values are NONE, ERROR, WARNING, INFO.
 
-**LogLevel** defines the log level to use. Available values are NONE|OFF, DEBUG, INFO, WARN|WARNING, ERROR. Logs are just written to the stderr/stdout outputs.
-
-**BroadcastIP** defines the broadcast IP used by the service. The default IP is 192.168.255.255 (local network range).
+**BroadcastIP** defines the broadcast IP used by the service. The default IP is 192.168.1.255 (local network range).
 
 **Commands** defines the available commands.
 
@@ -138,6 +136,16 @@ Install as a service :
 Uninstall as a service :
 
 <pre>sol.exe uninstall
+</pre>
+
+Start the service :
+
+<pre>sol.exe start
+</pre>
+
+Stop the service :
+
+<pre>sol.exe stop
 </pre>
 
 ## Miscellaneous
