@@ -23,7 +23,7 @@ func RegisterDefaultCommand() {
 
 func ExecuteCommand(Command CommandConfiguration) {
 	if Command.CommandType == COMMAND_TYPE_INTERNAL {
-		logger(3, "Executing operation ["+Command.Operation+"], type ["+Command.CommandType+"]")
+		logger.Info("Executing operation [" + Command.Operation + "], type [" + Command.CommandType + "]")
 		if Command.Operation == DEFAULT_COMMAND_SLEEP {
 			sleepDLLImplementation(0)
 		} else if Command.Operation == DEFAULT_COMMAND_HIBERNATE {
@@ -32,10 +32,10 @@ func ExecuteCommand(Command CommandConfiguration) {
 			shutdownDLLImplementation()
 		}
 	} else if Command.CommandType == COMMAND_TYPE_EXTERNAL {
-		logger(3, "Execute operation ["+Command.Operation+"], type ["+Command.CommandType+"], command ["+Command.Command+"]")
+		logger.Info("Execute operation [" + Command.Operation + "], type [" + Command.CommandType + "], command [" + Command.Command + "]")
 		commandImplementation(Command.Command)
 	} else {
-		logger(2, "Invalid command type ["+Command.CommandType+"]")
+		logger.Warning("Invalid command type [" + Command.CommandType + "]")
 	}
 }
 
@@ -50,7 +50,7 @@ func sleepDLLImplementation(state int) {
 		uintptr(0),     // forceCritical
 		uintptr(0))     // disableWakeEvent
 	if r == 0 {
-		logger(2, "Unable to execute Suspend command")
+		logger.Warning("Unable to execute Suspend command")
 	}
 }
 
@@ -72,7 +72,7 @@ func shutdownDLLImplementation() {
 		return nil
 	})
 	if err != nil {
-		logger(2, "Unable to execute shutdown command")
+		logger.Warning("Unable to execute shutdown command")
 	}
 }
 
@@ -86,6 +86,6 @@ func commandImplementation(command string) {
 	parts = parts[1:len(parts)]
 	_, err := exec.Command(head, parts...).Output()
 	if err != nil {
-		logger(2, "Unable to execute command ["+command+"]: "+err.Error())
+		logger.Warning("Unable to execute command [" + command + "]: " + err.Error())
 	}
 }

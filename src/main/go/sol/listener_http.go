@@ -51,26 +51,26 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		if mac == "" {
 			s = "No MAC address"
 			fmt.Fprintln(w, s)
-			logger(2, s)
+			logger.Warning(s)
 			return
 		}
 		magicPacket, err := EncodeMagicPacket(mac)
 		if err != nil {
 			fmt.Fprintln(w, err)
-			logger(2, err.Error())
+			logger.Warning(err.Error())
 			return
 		}
 		s = "Sending a magic packet to MAC address [" + mac + "]"
 		fmt.Fprintln(w, s)
-		logger(3, s)
+		logger.Info(s)
 		err = magicPacket.Wake(configuration.BroadcastIP)
 		if err == nil {
 		} else {
 			fmt.Fprintln(w, err)
-			logger(2, err.Error())
+			logger.Warning(err.Error())
 		}
 	} else if operation == "quit" {
-		logger(3, "Quit")
+		logger.Info("Quit")
 		defer os.Exit(0)
 	} else {
 		for idx, _ := range configuration.Commands {
@@ -82,16 +82,16 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 		s = "Invalid operation [" + operation + "]"
 		fmt.Fprintln(w, s)
-		logger(2, s)
+		logger.Warning(s)
 	}
 }
 
 func ListenerHTTP(port int) {
-	logger(3, "Listening HTTP requests on port ["+strconv.Itoa(port)+"]")
+	logger.Info("Listening HTTP requests on port [" + strconv.Itoa(port) + "]")
 	http.HandleFunc("/", handler)
 	err := http.ListenAndServe(":"+strconv.Itoa(port), nil)
 	if err != nil {
-		logger(1, "Error while start listening: "+err.Error())
+		logger.Error("Error while start listening: " + err.Error())
 		os.Exit(1)
 	}
 }

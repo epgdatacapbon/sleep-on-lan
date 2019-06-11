@@ -12,7 +12,7 @@ import (
 func GetInterfaces() []net.Interface {
 	interfaces, err := net.Interfaces()
 	if err != nil {
-		logger(2, "Unable to get interfaces: "+err.Error())
+		logger.Warning("Unable to get interfaces: " + err.Error())
 	}
 	return interfaces
 }

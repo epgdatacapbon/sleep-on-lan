@@ -9,9 +9,7 @@ import (
 	"github.com/kardianos/service"
 )
 
-var logLevel int = 1
-var srvLogger service.Logger
-
+var logger Logger
 var configuration = Configuration{}
 var configurationFileName = "sol.json"
 
@@ -61,7 +59,8 @@ func main() {
 		os.Exit(0)
 	}
 
-	srvLogger, err = srv.Logger(nil)
+	logger.logLevel = 1
+	logger.srvLogger, err = srv.Logger(nil)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -74,7 +73,7 @@ func main() {
 
 	err = srv.Run()
 	if err != nil {
-		logger(1, err.Error())
+		logger.Error(err.Error())
 		os.Exit(1)
 	}
 }

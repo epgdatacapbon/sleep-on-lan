@@ -53,16 +53,16 @@ func (conf *Configuration) InitDefaultConfiguration() {
 
 func (conf *Configuration) Load(configurationFileName string) {
 	if _, err := os.Stat(configurationFileName); err == nil {
-		logger(3, "Configuration file found at ["+configurationFileName+"]")
+		logger.Info("Configuration file found at [" + configurationFileName + "]")
 		file, _ := os.Open(configurationFileName)
 		decoder := json.NewDecoder(file)
 		err := decoder.Decode(&conf)
 		if err != nil {
-			logger(1, "Invalid format in ["+configurationFileName+"]: "+err.Error())
+			logger.Error("Invalid format in [" + configurationFileName + "]: " + err.Error())
 			os.Exit(1)
 		}
 	} else {
-		logger(3, "No configuration file found at ["+configurationFileName+"]")
+		logger.Info("No configuration file found at [" + configurationFileName + "]")
 	}
 }
 
@@ -70,15 +70,15 @@ func (conf *Configuration) Parse() {
 	// Log levels
 	switch conf.LogLevel {
 	case "NONE":
-		logLevel = 0
+		logger.logLevel = 0
 	case "ERROR":
-		logLevel = 1
+		logger.logLevel = 1
 	case "WARNING":
-		logLevel = 2
+		logger.logLevel = 2
 	case "INFO":
-		logLevel = 3
+		logger.logLevel = 3
 	default:
-		logger(1, "Invalid log level ["+conf.LogLevel+"]")
+		logger.Error("Invalid log level [" + conf.LogLevel + "]")
 		os.Exit(1)
 	}
 
@@ -97,14 +97,15 @@ func (conf *Configuration) Parse() {
 			conf.listenersConfiguration = append(conf.listenersConfiguration, *listenerConfiguration)
 		} else if strings.EqualFold(key, "HTTP") {
 			if bHTTP {
-				logger(2, "Only one HTTP port can be opened")
+				logger.Warning("Only one HTTP port can be opened")
 			} else {
 				listenerConfiguration.nature = "HTTP"
 				conf.listenersConfiguration = append(conf.listenersConfiguration, *listenerConfiguration)
 				bHTTP = true
 			}
 		} else {
-			logger(2, "Invalid listener type ["+key+"]")
+			logger.Error("Invalid listener type [" + key + "]")
+			os.Exit(1)
 		}
 	}
 
@@ -120,7 +121,7 @@ func (conf *Configuration) Parse() {
 	if conf.Default == "" {
 		conf.Default = conf.Commands[0].Operation
 	}
-	logger(3, "Set default operation to ["+conf.Default+"]")
+	logger.Info("Set default operation to [" + conf.Default + "]")
 
 	// Set command type
 	for idx, _ := range conf.Commands {
