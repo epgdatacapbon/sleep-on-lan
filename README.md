@@ -26,12 +26,15 @@ Provided you are using a wake-on-lan script like this one [wake-on-lan python sc
 wakeonlan 35:78:7a:87:d9:c4 192.168.255.255 // reversed mac address, will trigger the UDP listener of the sleep-on-lan process and will thus remotely sleep the computer
 </pre>
 
-### Sleep through REST service
+### REST service
 
 If this HTTP listener is activated, the SleepOnLan process then exposes a few REST services, for example :
 
-<pre>http://127.0.0.1:8009/                               // index page, just shows local IP / mac
+<pre>
+http://127.0.0.1:8009/                               // index page, just shows local IP / mac
 http://127.0.0.1:8009/sleep                          // remotely sleep this computer through this URL
+http://127.0.0.1:8009/hibernate                      // remotely hibernate this computer through this URL
+http://127.0.0.1:8009/shutdown                       // remotely shutdown this computer through this URL
 http://127.0.0.1:8009/wol/c4:d9:87:7a:78:35          // sends a wake-on-lan magic packet on the network to the provided mac address
 </pre>
 
@@ -88,7 +91,7 @@ curl http://myusername:mypassword@<IP>/sleep/
 
 **Commands** defines the available commands.
 
-By default, three commands are defined on windows : sleep, hibernate, shutdown (through a DLL API call on windows).
+By default, three commands are defined on windows : `sleep`, `hibernate`, `shutdown` (through a DLL API call on windows).
 
 You may customize / override this behavior, or add new commands (that will then be available under `http://<IP>:<HTTP PORT>/<operation>` if a HTTP listener is defined), if needed.
 
